@@ -539,7 +539,7 @@
       }
 
       #button-18 .knobs:before {
-        content: "Innovation Area";
+        content: "Focus Area";
         position: absolute;
         top: 4px;
         left: 4px;
@@ -565,7 +565,7 @@
       }
 
       #button-18 .checkbox:checked + .knobs:before {
-        content: "Focus Area";
+        content: "Innovation Area";
         left: 36px;
         background-color: #ea3b66;
       }
@@ -1609,7 +1609,7 @@
       var chartTitle = chartSVG
         .append("text")
         .attr("class", "chart-title")
-        .text("National Grid Compass")
+        .text("National Grid Compass Focus Areas")
         .attr("y", (-height * 4.55) / 10)
         .style("display", "none");
 
@@ -2800,20 +2800,20 @@
   
   
             //CHANGE HERE:
-            function themeSort(a, b) {
-              for (i = 0; i < themeOrder.length; i++) {
-                if (a === themeOrder[i]) {
-                  var valA = i;
-                }
-                if (b === themeOrder[i]) {
-                  var valB = i;
-                }
-              }
-              return valA < valB ? -1 : valA > valB ? 1 : valA >= valB ? 0 : NaN;
-            }*/
+            */
+
+              var themeOrder = ["Accessibility", "Stability", "Sustainability", "Mobility"]
 
                 var tempOrder = d3
                   .nest()
+                  .key(function (d) {
+                    return d["Theme"];
+                  })
+                  .sortKeys(function(a, b) {
+                    var aOrder = themeOrder.indexOf(a)
+                    var bOrder = themeOrder.indexOf(b)
+                    return d3.ascending(aOrder, bOrder)
+                  })
                   .key(function (d) {
                     return d["Focus Area"];
                   })
@@ -2823,7 +2823,10 @@
 
                 var focusAreaOrder = [];
                 tempOrder.forEach(function (v) {
-                  focusAreaOrder.push(v.key)
+                  v.values.forEach(function(w) {
+                    focusAreaOrder.push(w.key)
+                  })
+                  
                 });
 
                 var focusAreaSort = focusAreaOrder;
@@ -2996,14 +2999,6 @@
                   })
                   .entries(data);
 
-                /*var count_by_themes = d3
-              .nest()
-              .key(function(d) {
-                return d["Super Clusters"];
-              })
-              .sortKeys(themeSort)
-              .entries(data);*/
-
                 var count_by_maturity = d3
                   .nest()
                   .key(function (d) {
@@ -3132,6 +3127,25 @@
                     return d3.ascending(+a.key, +b.key);
                   });
 
+                var outerChartPie = d3
+                  .pie()
+                  .value(function (d) {
+                    var number_of_opp_spaces = [
+                      ...new Set(
+                        d.value.values.map(function (v) {
+                          return v.key;
+                        })
+                      ),
+                    ];
+                    return number_of_opp_spaces.length;
+                  })
+                  .sort(function (a, b) {
+                    return d3.ascending(a.key, b.key);
+                  });
+
+                var outerChartPieData = outerChartPie(d3.entries(tempOrder));
+
+                console.log(outerChartPieData)
 
                 var chartPieData = chartPie(d3.entries(focusAreaSorted));
 
@@ -3187,6 +3201,73 @@
                   });
 
                 themeFontData = categoryFontObject[0];
+
+                var themeSegments = chartSVG
+                  .selectAll("theme-segments")
+                  .data(outerChartPieData)
+                  .enter()
+                  .append("path")
+                  .attr("d", themeArc)
+                  .attr("fill", "#00148C")
+                  .style("stroke", "white")
+                  .style("stroke-width", "2px")
+                  .each(function (d, i) {
+                    var firstArcSection = /(^.+?)L/;
+                    var newArc = firstArcSection.exec(
+                      d3.select(this).attr("d")
+                    )[1];
+                    d.newArc = newArc.replace(/,/g, " ");
+                    d.percentage =
+                      ((d.endAngle - d.startAngle) / 2 + d.startAngle) /
+                      0.0628319;
+                    if (d.percentage >= 100) {
+                      d.percentage -= 100;
+                    }
+                    if (d.percentage >= 25 && d.percentage <= 75) {
+                      var startLoc = /M(.*?)A/;
+                      var middleLoc = /A(.*?)0 0 1/;
+                      var endLoc = /0 0 1 (.*?)$/;
+                      d.newStart = endLoc.exec(d.newArc)[1];
+                      d.newEnd = startLoc.exec(d.newArc)[1];
+                      d.middleSec = middleLoc.exec(d.newArc)[1];
+                      d.newArc =
+                        "M" +
+                        d.newStart +
+                        "A" +
+                        d.middleSec +
+                        "0 0 0 " +
+                        d.newEnd;
+                    }
+                    d.hiddenArc = chartSVG
+                      .append("path")
+                      .attr("class", "hiddenDonutArcs")
+                      .attr("id", function () {
+                        return "hidden-theme-band" + d.data.key;
+                      })
+                      .attr("d", d.newArc)
+                      .style("fill", "none");
+                  });
+
+                var themeLabels = chartSVG
+                  .selectAll(".theme-label-text")
+                  .data(outerChartPieData)
+                  .enter()
+                  .append("text")
+                  .attr("class", "label theme-label-text")
+                  .attr("dy", function (d) {
+                    if (d.percentage >= 25 && d.percentage <= 75) {
+                      return themeFontData.dy_upper;
+                    }
+                    return themeFontData.dy_lower;
+                  })
+                  .append("textPath")
+                  .attr("xlink:href", function (d, i) {
+                    return "#" + "hidden-theme-band" + d.data.key;
+                  })
+                  .attr("startOffset", "50%")
+                  .text(function (d) {
+                    return d.data.value.key.toUpperCase();
+                  });
 
 
 
