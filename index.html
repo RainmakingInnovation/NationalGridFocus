@@ -1625,9 +1625,9 @@
         .attr("x", -titleLogoWidth / 2)
         .style("display", "none");
 
-      d3.csv("https://cors-anywhere.herokuapp.com/https://docs.google.com/spreadsheets/d/e/2PACX-1vREORzt97Phiwilho_Ss1bgmMbjrleTQuMhTpaVlUFm-E3woqh84lpeZB4PJ3fVP_TLDmiY9-qsF9HD/pub?gid=1931507743&single=true&output=csv").then(
+      d3.csv("NG Project Hub WIP - Compass.csv").then(
         function (data) {
-          d3.csv("https://cors-anywhere.herokuapp.com/https://docs.google.com/spreadsheets/d/e/2PACX-1vREORzt97Phiwilho_Ss1bgmMbjrleTQuMhTpaVlUFm-E3woqh84lpeZB4PJ3fVP_TLDmiY9-qsF9HD/pub?gid=1998255922&single=true&output=csv").then(function (
+          d3.csv("NG Project Hub WIP - Compass.csv").then(function (
             desc
           ) {
             var transform = d3.geoTransform({ point: projectPoint }),
